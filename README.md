@@ -1,6 +1,7 @@
 # SQL-Base-Copy
 Копирование MS SQL баз с внешнего сервера на локальный посредством backup/restore
 
+![Example](.pics/s.png)
 
 "C:\Windows\Archive\bat\SQL-Base-Copy.cmd" - "Батник" для запуска копирования SQL баз
 Параметры запуска : SQL-Base-Copy.cmd <Адрес исходного сервера> <Исходная база> <Целевая база на этом сервере>
