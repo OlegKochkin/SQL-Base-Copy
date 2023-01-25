@@ -4,7 +4,7 @@ function Now {
 
 function Del-Bak-File ($File) {
 	if (Test-Path $File) {
-		Write-Host "$(Now)Удаление файла бэкапа ""$File"""
+		Write-Host "$(Now)РЈРґР°Р»РµРЅРёРµ С„Р°Р№Р»Р° Р±СЌРєР°РїР° ""$File"""
 		Remove-Item $File -Force
 		}
 	}
@@ -26,10 +26,10 @@ function Get-Src-SQL-File ($BakFile,$Mask) {
 	}
 
 if ($ARGS.Length -ne 3){
-	Write-Warning "Неправильные параметры командной строки."
-	Write-Host "Запуск:"
-	Write-Host "   SQL-Base-Copy.ps1 <Исходный SQL сервер> <Исходная SQL база> <Целевая SQL база на этом сервере>"
-	Write-Host "Пример:"
+	Write-Warning "РќРµРїСЂР°РІРёР»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹ РєРѕРјР°РЅРґРЅРѕР№ СЃС‚СЂРѕРєРё."
+	Write-Host "Р—Р°РїСѓСЃРє:"
+	Write-Host "   SQL-Base-Copy.ps1 <РСЃС…РѕРґРЅС‹Р№ SQL СЃРµСЂРІРµСЂ> <РСЃС…РѕРґРЅР°СЏ SQL Р±Р°Р·Р°> <Р¦РµР»РµРІР°СЏ SQL Р±Р°Р·Р° РЅР° СЌС‚РѕРј СЃРµСЂРІРµСЂРµ>"
+	Write-Host "РџСЂРёРјРµСЂ:"
 	Write-Host "   SQL-Base-Copy.ps1 SQL.WORK ERP ERP_TEST"
 	exit(1)
 	}
@@ -40,24 +40,24 @@ $LocalComp = Get-CimInstance -Class Win32_ComputerSystem
 $DstComp = $LocalComp.Name+"."+$LocalComp.Domain+" (localhost)"
 $DstBase = $ARGS[2]
 
-# Файлы данных и журнала, создаваемые по умолчанию
+# Р¤Р°Р№Р»С‹ РґР°РЅРЅС‹С… Рё Р¶СѓСЂРЅР°Р»Р°, СЃРѕР·РґР°РІР°РµРјС‹Рµ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
 $DstMdfFile = $(Get-SQL-Property "InstanceDefaultDataPath")+$DstBase+".mdf"
 $DstLogFile = $(Get-SQL-Property "InstanceDefaultLogPath")+$DstBase+"_log.ldf"
 
 Import-Module $PSScriptRoot\SQL-Base-Copy.psm1 -DisableNameChecking
 
-Write-Host "$(Now)Запущен скрипт $PSCommandPath пользователем $ENV:UserName на $($LocalComp.Name).$($LocalComp.Domain).`n`r"
-Write-Host "Исходный сервер: $SrcComp"
-Write-Host "Исходная база:   $SrcBase"
-Write-Host "Целевой сервер:  $DstComp"
-Write-Host "Целевая база:    $DstBase"
-Write-Host "База будет восстановлена в файлы:"
+Write-Host "$(Now)Р—Р°РїСѓС‰РµРЅ СЃРєСЂРёРїС‚ $PSCommandPath РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј $ENV:UserName РЅР° $($LocalComp.Name).$($LocalComp.Domain).`n`r"
+Write-Host "РСЃС…РѕРґРЅС‹Р№ СЃРµСЂРІРµСЂ: $SrcComp"
+Write-Host "РСЃС…РѕРґРЅР°СЏ Р±Р°Р·Р°:   $SrcBase"
+Write-Host "Р¦РµР»РµРІРѕР№ СЃРµСЂРІРµСЂ:  $DstComp"
+Write-Host "Р¦РµР»РµРІР°СЏ Р±Р°Р·Р°:    $DstBase"
+Write-Host "Р‘Р°Р·Р° Р±СѓРґРµС‚ РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅР° РІ С„Р°Р№Р»С‹:"
 Write-Host "	$DstMdfFile"
 Write-Host "	$DstLogFile"
-Write-Host -NoNewLine -ForegroundColor Yellow "`n`rПродолжить? (y/n)"
+Write-Host -NoNewLine -ForegroundColor Yellow "`n`rРџСЂРѕРґРѕР»Р¶РёС‚СЊ? (y/n)"
 $Key = Read-Host
 if ($Key.ToUpper() -ne "Y"){
-	Write-Host "`n`r$(Now)Отказ от выполнения скрипта."
+	Write-Host "`n`r$(Now)РћС‚РєР°Р· РѕС‚ РІС‹РїРѕР»РЅРµРЅРёСЏ СЃРєСЂРёРїС‚Р°."
 	exit
 	}
 Write-Host "`n`r"
@@ -67,41 +67,42 @@ $TempFile = $TempFolderSrc+$SrcBase+$SuffixBak
 $SrcTemp = '\\'+$SrcComp+$TempFolderSrcUnc+$SrcBase+$SuffixBak
 $DstTemp = $TempFolderDst+$SrcBase+$SuffixBak
 
-Write-Host "$(Now)Бэкап SQL базы ""$SrcBase"" на сервере ""$SrcComp"" в ""$TempFile""..."
+Write-Host "$(Now)Р‘СЌРєР°Рї SQL Р±Р°Р·С‹ ""$SrcBase"" РЅР° СЃРµСЂРІРµСЂРµ ""$SrcComp"" РІ ""$TempFile""..."
 sqlcmd -m1 -b -S $SrcComp -Q "BACKUP DATABASE [$SrcBase] TO DISK = N'$TempFile' WITH NOFORMAT, INIT, NAME = N'Full Backup $SrcBase', NOSKIP, REWIND, NOUNLOAD, STATS = 10"
 if (-Not $?) {
-	Write-Host "$(Now)Создание бэкапа было неудачным. Выполнение скрипта прервано."
+	Write-Host "$(Now)РЎРѕР·РґР°РЅРёРµ Р±СЌРєР°РїР° Р±С‹Р»Рѕ РЅРµСѓРґР°С‡РЅС‹Рј. Р’С‹РїРѕР»РЅРµРЅРёРµ СЃРєСЂРёРїС‚Р° РїСЂРµСЂРІР°РЅРѕ."
 	Del-Bak-File $TempFile
 	exit
 	}
 
-Write-Host "$(Now)Перемещение файла бэкапа из ""$SrcTemp"" в ""$DstTemp""..."
+Write-Host "$(Now)РџРµСЂРµРјРµС‰РµРЅРёРµ С„Р°Р№Р»Р° Р±СЌРєР°РїР° РёР· ""$SrcTemp"" РІ ""$DstTemp""..."
 if (Test-Path $SrcTemp) {
 	Move-Item $SrcTemp $DstTemp -Force
 	} else {
-	Write-Warning "$(Now)Файл бэкапа ""$SrcTemp"" на сервере ""$DstComp"" не обнаружен."
-	Write-Host "$(Now)Возможно, бэкап был неудачен. Выполнение скрипта прервано."
+	Write-Warning "$(Now)Р¤Р°Р№Р» Р±СЌРєР°РїР° ""$SrcTemp"" РЅР° СЃРµСЂРІРµСЂРµ ""$DstComp"" РЅРµ РѕР±РЅР°СЂСѓР¶РµРЅ."
+	Write-Host "$(Now)Р’РѕР·РјРѕР¶РЅРѕ, Р±СЌРєР°Рї Р±С‹Р» РЅРµСѓРґР°С‡РµРЅ. Р’С‹РїРѕР»РЅРµРЅРёРµ СЃРєСЂРёРїС‚Р° РїСЂРµСЂРІР°РЅРѕ."
 	exit
 	}
 
-# Получение имён файлов данных и журнала из архива
+# РџРѕР»СѓС‡РµРЅРёРµ РёРјС‘РЅ С„Р°Р№Р»РѕРІ РґР°РЅРЅС‹С… Рё Р¶СѓСЂРЅР°Р»Р° РёР· Р°СЂС…РёРІР°
 $SrcMdfFile = Get-Src-SQL-File $DstTemp ".mdf"
 $SrcLogFile = Get-Src-SQL-File $DstTemp ".ldf"
 
 if (Test-Path $DstTemp) {
 	sqlcmd -m1 -b -Q "IF DB_ID('$DstBase') IS NULL CREATE DATABASE [$DstBase]"
 	if (-Not $?) {
-		Write-Host "$(Now)Создание SQL базы было неудачным. Выполнение скрипта прервано."
+		Write-Host "$(Now)РЎРѕР·РґР°РЅРёРµ SQL Р±Р°Р·С‹ Р±С‹Р»Рѕ РЅРµСѓРґР°С‡РЅС‹Рј. Р’С‹РїРѕР»РЅРµРЅРёРµ СЃРєСЂРёРїС‚Р° РїСЂРµСЂРІР°РЅРѕ."
 		Del-Bak-File $DstTemp
 		exit
 		}
-	Write-Host "$(Now)Восстановление SQL базы ""$DstBase"" на сервере ""$DstComp"" из ""$DstTemp""..."
+	Write-Host "$(Now)Р’РѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ SQL Р±Р°Р·С‹ ""$DstBase"" РЅР° СЃРµСЂРІРµСЂРµ ""$DstComp"" РёР· ""$DstTemp""..."
 	sqlcmd -m1 -b -Q "ALTER DATABASE [$DstBase] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;RESTORE DATABASE [$DstBase] FROM  DISK = N'$DstTemp' WITH  FILE = 1,  MOVE N'$SrcMdfFile' TO N'$DstMdfFile',  MOVE N'$SrcLogFile' TO N'$DstLogFile',  NOUNLOAD,  REPLACE,  STATS = 10;ALTER DATABASE [$DstBase] SET MULTI_USER"
 	if (-Not $?) {
-		Write-Host "$(Now)Восстановление из бэкапа было неудачным. Выполнение скрипта прервано."
+		Write-Host "$(Now)Р’РѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ РёР· Р±СЌРєР°РїР° Р±С‹Р»Рѕ РЅРµСѓРґР°С‡РЅС‹Рј. Р’С‹РїРѕР»РЅРµРЅРёРµ СЃРєСЂРёРїС‚Р° РїСЂРµСЂРІР°РЅРѕ."
 		Del-Bak-File $DstTemp
 		exit
 		}
 	Del-Bak-File $DstTemp
 	}
-Write-Host "$(Now)Скрипт завершён."
+Write-Host "$(Now)РЎРєСЂРёРїС‚ Р·Р°РІРµСЂС€С‘РЅ."
+
