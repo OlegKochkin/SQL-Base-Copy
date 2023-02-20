@@ -62,7 +62,7 @@ if ($Key.ToUpper() -ne "Y"){
 	}
 Write-Host "`n`r"
 
-$SuffixBak = "-script-backup.bak"
+$SuffixBak = "-script-backup-$([guid]::NewGuid().ToString('N').Remove(8)).bak"
 $TempFile = $TempFolderSrc+$SrcBase+$SuffixBak
 $SrcTemp = '\\'+$SrcComp+$TempFolderSrcUnc+$SrcBase+$SuffixBak
 $DstTemp = $TempFolderDst+$SrcBase+$SuffixBak
