@@ -25,36 +25,45 @@ function Get-Src-SQL-File ($BakFile,$Mask) {
 		} else { $False }
 	}
 
-if ($ARGS.Length -ne 3){
+if ($ARGS.Length -lt 3){
 	Write-Warning "Неправильные параметры командной строки."
 	Write-Host "Запуск:"
-	Write-Host "   SQL-Base-Copy.ps1 <Исходный SQL сервер> <Исходная SQL база> <Целевая SQL база на этом сервере>"
+	Write-Host "   SQL-Base-Copy.ps1 <Исходный SQL сервер> <Исходная SQL база> <Целевая SQL база на этом сервере> [Ещё целевые базы...]"
 	Write-Host "Пример:"
-	Write-Host "   SQL-Base-Copy.ps1 SQL.WORK ERP ERP_TEST"
+	Write-Host "   SQL-Base-Copy.ps1 SRC.SERVER SRC_BASE DST_BASE_1 DST_BASE_2"
 	exit(1)
+	}
+
+$DstBases = @()
+$DstMdfFiles = @()
+$DstLogFiles = @()
+
+for ($i=2; $i -lt $ARGS.Length; $i++){
+	$DstBases += $ARGS[$i]
+# Файлы данных и журнала, создаваемые по умолчанию
+	$DstMdfFiles += $(Get-SQL-Property "InstanceDefaultDataPath")+$ARGS[$i]+".mdf"
+	$DstLogFiles += $(Get-SQL-Property "InstanceDefaultLogPath")+$ARGS[$i]+"_log.ldf"
 	}
 
 $SrcComp = $ARGS[0]
 $SrcBase = $ARGS[1]
 $LocalComp = Get-CimInstance -Class Win32_ComputerSystem
 $DstComp = $LocalComp.Name+"."+$LocalComp.Domain+" (localhost)"
-$DstBase = $ARGS[2]
-
-# Файлы данных и журнала, создаваемые по умолчанию
-$DstMdfFile = $(Get-SQL-Property "InstanceDefaultDataPath")+$DstBase+".mdf"
-$DstLogFile = $(Get-SQL-Property "InstanceDefaultLogPath")+$DstBase+"_log.ldf"
 
 Import-Module $PSScriptRoot\SQL-Base-Copy.psm1 -DisableNameChecking
 
-Write-Host "$(Now)Запущен скрипт $PSCommandPath пользователем $ENV:UserName на $($LocalComp.Name).$($LocalComp.Domain).`n`r"
+Write-Host "$(Now)Запущен скрипт $PSCommandPath для копирования SQL базы.`n`r"
 Write-Host "Исходный сервер: $SrcComp"
 Write-Host "Исходная база:   $SrcBase"
-Write-Host "Целевой сервер:  $DstComp"
-Write-Host "Целевая база:    $DstBase"
-Write-Host "База будет восстановлена в файлы:"
-Write-Host "	$DstMdfFile"
-Write-Host "	$DstLogFile"
-Write-Host -NoNewLine -ForegroundColor Yellow "`n`rПродолжить? (y/n)"
+Write-Host "Целевой сервер:  $DstComp`r`n"
+for ($i=0; $i -lt $DstBases.Length; $i++){
+	Write-Host "Целевая база:    $($DstBases[$i])"
+	Write-Host "Будет восстановлена в файлы:"
+	Write-Host "	$($DstMdfFiles[$i])"
+	Write-Host "	$($DstLogFiles[$i])"
+	}
+
+Write-Host -NoNewLine -ForegroundColor Yellow "`n`rПродолжить? (y/N)"
 $Key = Read-Host
 if ($Key.ToUpper() -ne "Y"){
 	Write-Host "`n`r$(Now)Отказ от выполнения скрипта."
@@ -89,20 +98,17 @@ $SrcMdfFile = Get-Src-SQL-File $DstTemp ".mdf"
 $SrcLogFile = Get-Src-SQL-File $DstTemp ".ldf"
 
 if (Test-Path $DstTemp) {
-	sqlcmd -m1 -b -Q "IF DB_ID('$DstBase') IS NULL CREATE DATABASE [$DstBase]"
-	if (-Not $?) {
-		Write-Host "$(Now)Создание SQL базы было неудачным. Выполнение скрипта прервано."
-		Del-Bak-File $DstTemp
-		exit
+	for ($i=0; $i -lt $DstBases.Length; $i++){
+		sqlcmd -m1 -b -Q "IF DB_ID('$($DstBases[$i])') IS NULL CREATE DATABASE [$($DstBases[$i])]"
+		if (-Not $?) {
+			Write-Host "$(Now)Создание SQL базы было неудачным."
+			}
+		Write-Host "$(Now)Восстановление SQL базы ""$($DstBases[$i])"" на сервере ""$DstComp"" из ""$DstTemp""..."
+		sqlcmd -m1 -b -Q "ALTER DATABASE [$($DstBases[$i])] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;RESTORE DATABASE [$($DstBases[$i])] FROM  DISK = N'$DstTemp' WITH  FILE = 1,  MOVE N'$SrcMdfFile' TO N'$($DstMdfFiles[$i])',  MOVE N'$SrcLogFile' TO N'$($DstLogFiles[$i])',  NOUNLOAD,  REPLACE,  STATS = 10;ALTER DATABASE [$($DstBases[$i])] SET MULTI_USER"
+		if (-Not $?) {
+			Write-Host "$(Now)Восстановление из бэкапа было неудачным."
+			}
 		}
-	Write-Host "$(Now)Восстановление SQL базы ""$DstBase"" на сервере ""$DstComp"" из ""$DstTemp""..."
-	sqlcmd -m1 -b -Q "ALTER DATABASE [$DstBase] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;RESTORE DATABASE [$DstBase] FROM  DISK = N'$DstTemp' WITH  FILE = 1,  MOVE N'$SrcMdfFile' TO N'$DstMdfFile',  MOVE N'$SrcLogFile' TO N'$DstLogFile',  NOUNLOAD,  REPLACE,  STATS = 10;ALTER DATABASE [$DstBase] SET MULTI_USER"
-	if (-Not $?) {
-		Write-Host "$(Now)Восстановление из бэкапа было неудачным. Выполнение скрипта прервано."
-		Del-Bak-File $DstTemp
-		exit
-		}
-	Del-Bak-File $DstTemp
 	}
+Del-Bak-File $DstTemp
 Write-Host "$(Now)Скрипт завершён."
-
