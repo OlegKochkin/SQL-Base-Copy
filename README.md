@@ -4,7 +4,6 @@
 "C:\Windows\Archive\bat\SQL-Base-Copy.cmd" - "Батник" для запуска копирования SQL баз
 
 Параметры запуска : SQL-Base-Copy.cmd <Адрес исходного сервера> <Исходная база> <Целевая база на этом сервере> [Ещё целевые базы...]
-Консольный вывод дублируется в файл отчёта "C:\Windows\Archive\bat\SQL-Base-Copy\Logs\SQL-Base-Copy.log"
 
 Скрипты PowerShell находятся в папке "C:\Windows\Archive\bat\SQL-Base-Copy":
 
