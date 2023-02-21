@@ -1,3 +1,5 @@
+# https://github.com/OlegKochkin/SQL-Base-Copy
+
 function Now {
 	$(Get-Date -UFormat "%d.%m.%Y %H:%M:%S - ")
 	}
