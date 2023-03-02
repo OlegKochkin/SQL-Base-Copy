@@ -1,7 +1,7 @@
 # https://github.com/OlegKochkin/SQL-Base-Copy
 
 if ($ARGS.Length -le 0) {
-	Write-Warning "Не указан список серверов в командной строке. Список серверов содержит адреса SQL серверов через пробел"
+	Write-Warning "РќРµ СѓРєР°Р·Р°РЅ СЃРїРёСЃРѕРє СЃРµСЂРІРµСЂРѕРІ РІ РєРѕРјР°РЅРґРЅРѕР№ СЃС‚СЂРѕРєРµ. РЎРїРёСЃРѕРє СЃРµСЂРІРµСЂРѕРІ СЃРѕРґРµСЂР¶РёС‚ Р°РґСЂРµСЃР° SQL СЃРµСЂРІРµСЂРѕРІ С‡РµСЂРµР· РїСЂРѕР±РµР»"
 	exit
 	}
 
@@ -13,13 +13,13 @@ $DstServer = $LocalComp.Name+"."+$LocalComp.Domain
 
 Add-Type -assembly System.Windows.Forms
 $fm = New-Object System.Windows.Forms.Form
-$fm.Text ="Копмрование SQL базы с другого сервера на локальный ($DstServer)."
+$fm.Text ="РљРѕРїРјСЂРѕРІР°РЅРёРµ SQL Р±Р°Р·С‹ СЃ РґСЂСѓРіРѕРіРѕ СЃРµСЂРІРµСЂР° РЅР° Р»РѕРєР°Р»СЊРЅС‹Р№ ($DstServer)."
 $fm.Width = 725
 $fm.Height = 400
 $fm.AutoSize = $True
 
 $lSrcBases = New-Object System.Windows.Forms.Label
-$lSrcBases.Text = "Исходный сервер"
+$lSrcBases.Text = "РСЃС…РѕРґРЅС‹Р№ СЃРµСЂРІРµСЂ"
 $lSrcBases.AutoSize = 1
 $lSrcBases.Location  = New-Object System.Drawing.Point(10,5)
 
@@ -83,7 +83,7 @@ Reload-Src-Bases
 $bCopy = New-Object System.Windows.Forms.Button
 $bCopy.Location = New-Object System.Drawing.Point(315,180)
 $bCopy.Enabled = $False
-$bCopy.Text = "Копировать"
+$bCopy.Text = "РљРѕРїРёСЂРѕРІР°С‚СЊ"
 $bCopy.Add_Click({    
 	Start-Process "$Global:BatFolder\SQL-Base-Copy.cmd" -ArgumentList "$Global:SrcServer","$($lbSrcBases.SelectedItem)","$Global:DstBases"
 	$fm.Close()
@@ -93,7 +93,7 @@ $bShortCut = New-Object System.Windows.Forms.Button
 $bShortCut.Location = New-Object System.Drawing.Point(10,($fm.Height-55))
 $bShortCut.Size = New-Object System.Drawing.Size(120,20)
 $bShortCut.Enabled = $False
-$bShortCut.Text = "Создать ярлык"
+$bShortCut.Text = "РЎРѕР·РґР°С‚СЊ СЏСЂР»С‹Рє"
 $bShortCut.Add_Click({    
 	$WshShell = New-Object -comObject WScript.Shell
 	$Shortcut = $WshShell.CreateShortcut("$Global:Jobs\From $Global:SrcServer $($lbSrcBases.SelectedItem) to $Global:DstBases.lnk")
@@ -104,7 +104,7 @@ $bShortCut.Add_Click({
   })
 
 $lDstBases = New-Object System.Windows.Forms.Label
-$lDstBases.Text = "Целевой (локальный) сервер ""$DstServer"""
+$lDstBases.Text = "Р¦РµР»РµРІРѕР№ (Р»РѕРєР°Р»СЊРЅС‹Р№) СЃРµСЂРІРµСЂ ""$DstServer"""
 $lDstBases.AutoSize = 1
 $lDstBases.Location  = New-Object System.Drawing.Point(400,5)
 
@@ -112,7 +112,7 @@ $cbNewBase = New-Object System.Windows.Forms.CheckBox
 $cbNewBase.Location = New-Object System.Drawing.Point(400,25)
 $cbNewBase.Size = New-Object System.Drawing.Size(20,20)
 $ttNebBase = New-Object System.Windows.Forms.ToolTip
-$ttNebBase.SetToolTip($cbNewBase,"Создать новую базу`r`nПри смене с откл. на вкл., в поле целевой базы копируется имя исходной базы")
+$ttNebBase.SetToolTip($cbNewBase,"РЎРѕР·РґР°С‚СЊ РЅРѕРІСѓСЋ Р±Р°Р·Сѓ`r`nРџСЂРё СЃРјРµРЅРµ СЃ РѕС‚РєР». РЅР° РІРєР»., РІ РїРѕР»Рµ С†РµР»РµРІРѕР№ Р±Р°Р·С‹ РєРѕРїРёСЂСѓРµС‚СЃСЏ РёРјСЏ РёСЃС…РѕРґРЅРѕР№ Р±Р°Р·С‹")
 
 $cbNewBase.Add_CheckStateChanged({
 	if ($cbNewBase.Checked) {
@@ -138,7 +138,7 @@ $lbDstBases.Location = New-Object System.Drawing.Point(400,50)
 $lbDstBases.Size = New-Object System.Drawing.Size(300,($fm.Height-120))
 $lbDstBases.SelectionMode = "MultiExtended"
 $ttDstBases = New-Object System.Windows.Forms.ToolTip
-$ttDstBases.SetToolTip($lbDstBases,"Множественный выбор с зажатой клавишей CTRL")
+$ttDstBases.SetToolTip($lbDstBases,"РњРЅРѕР¶РµСЃС‚РІРµРЅРЅС‹Р№ РІС‹Р±РѕСЂ СЃ Р·Р°Р¶Р°С‚РѕР№ РєР»Р°РІРёС€РµР№ CTRL")
 $lbDstBases.Add_SelectedIndexChanged({Update-Status})
 
 $Vis = $False
