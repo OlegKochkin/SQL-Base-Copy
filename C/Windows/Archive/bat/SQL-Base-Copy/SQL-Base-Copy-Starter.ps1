@@ -1,24 +1,25 @@
+# https://github.com/OlegKochkin/SQL-Base-Copy
+
 if ($ARGS.Length -le 0) {
-	Write-Warning "РќРµ СѓРєР°Р·Р°РЅ СЃРїРёСЃРѕРє СЃРµСЂРІРµСЂРѕРІ РІ РєРѕРјР°РЅРґРЅРѕР№ СЃС‚СЂРѕРєРµ. РЎРїРёСЃРѕРє СЃРµСЂРІРµСЂРѕРІ СЃРѕРґРµСЂР¶РёС‚ Р°РґСЂРµСЃР° SQL СЃРµСЂРІРµСЂРѕРІ С‡РµСЂРµР· РїСЂРѕР±РµР»"
+	Write-Warning "Не указан список серверов в командной строке. Список серверов содержит адреса SQL серверов через пробел"
 	exit
 	}
 
 Import-Module $PSScriptRoot\SQL-Base-Copy-Starter.psm1 -DisableNameChecking
 
 $Global:SrcServer = $ARGS[0]
-$Global:DstBase = ""
 $LocalComp = Get-CimInstance -Class Win32_ComputerSystem
 $DstServer = $LocalComp.Name+"."+$LocalComp.Domain
 
 Add-Type -assembly System.Windows.Forms
 $fm = New-Object System.Windows.Forms.Form
-$fm.Text ="РљРѕРїРёСЂРѕРІР°РЅРёРµ SQL Р±Р°Р·С‹ СЃ РґСЂСѓРіРѕРіРѕ СЃРµСЂРІРµСЂР° РЅР° Р»РѕРєР°Р»СЊРЅС‹Р№ ($DstServer)."
+$fm.Text ="Копмрование SQL базы с другого сервера на локальный ($DstServer)."
 $fm.Width = 725
 $fm.Height = 400
 $fm.AutoSize = $True
 
 $lSrcBases = New-Object System.Windows.Forms.Label
-$lSrcBases.Text = "РСЃС…РѕРґРЅС‹Р№ СЃРµСЂРІРµСЂ"
+$lSrcBases.Text = "Исходный сервер"
 $lSrcBases.AutoSize = 1
 $lSrcBases.Location  = New-Object System.Drawing.Point(10,5)
 
@@ -39,8 +40,15 @@ $lbSrcBases.Location = New-Object System.Drawing.Point(10,50)
 $lbSrcBases.Size = New-Object System.Drawing.Size(300,($fm.Height-120))
 
 function Update-Status {
-	$eStatus.Text = "$($lbSrcBases.SelectedItem) ($Global:SrcServer) ---->>> $Global:DstBase (Р»РѕРєР°Р»СЊРЅС‹Р№, $DstServer)"
-	if ($($lbSrcBases.SelectedItem) -and $Global:SrcServer -and $Global:DstBase) {
+	$Global:DstBases = @()
+	foreach ($DstBase in $lbDstBases.SelectedItems) {
+		$Global:DstBases += $DstBase
+		}
+	if ($cbNewBase.Checked){
+		$Global:DstBases += $eNewBase.Text
+		}
+	$eStatus.Text = "$($lbSrcBases.SelectedItem) --> $Global:DstBases"
+	if ($($lbSrcBases.SelectedItem) -and $Global:SrcServer -and $Global:DstBases) {
 		$bCopy.Enabled = $True
 		$bShortCut.Enabled = $True
 		} else {
@@ -51,7 +59,7 @@ function Update-Status {
 	$Flag = $False
 	if ($cbNewBase.Checked){
 		foreach ($Item in $lbDstBases.Items){
-			if ($Global:DstBase -eq $Item) {
+			if ($Item -eq $eNewBase.Text) {
 				$Flag = $True
 				$eNewBase.BackColor = "Red"
 				}
@@ -74,13 +82,10 @@ Reload-Src-Bases
 
 $bCopy = New-Object System.Windows.Forms.Button
 $bCopy.Location = New-Object System.Drawing.Point(315,180)
-# $bCopy.Size = New-Object System.Drawing.Size(300,($fm.Height-120))
 $bCopy.Enabled = $False
-$bCopy.Text = "РљРѕРїРёСЂРѕРІР°С‚СЊ"
+$bCopy.Text = "Копировать"
 $bCopy.Add_Click({    
-#	powershell .\SQL-Base-Copy.ps1 $Global:SrcServer $($lbSrcBases.SelectedItem) $Global:DstBase >> SQL-Base-Copy-Starter.log
-#	Start-Process "powershell" -ArgumentList "$PSScriptRoot\SQL-Base-Copy.ps1","$Global:SrcServer","$($lbSrcBases.SelectedItem)","$Global:DstBase",";pause"
-	Start-Process "$Global:BatFolder\SQL-Base-Copy.cmd" -ArgumentList "$Global:SrcServer","$($lbSrcBases.SelectedItem)","$Global:DstBase"
+	Start-Process "$Global:BatFolder\SQL-Base-Copy.cmd" -ArgumentList "$Global:SrcServer","$($lbSrcBases.SelectedItem)","$Global:DstBases"
 	$fm.Close()
   })
 
@@ -88,18 +93,18 @@ $bShortCut = New-Object System.Windows.Forms.Button
 $bShortCut.Location = New-Object System.Drawing.Point(10,($fm.Height-55))
 $bShortCut.Size = New-Object System.Drawing.Size(120,20)
 $bShortCut.Enabled = $False
-$bShortCut.Text = "РЎРѕР·РґР°С‚СЊ СЏСЂР»С‹Рє"
+$bShortCut.Text = "Создать ярлык"
 $bShortCut.Add_Click({    
 	$WshShell = New-Object -comObject WScript.Shell
-	$Shortcut = $WshShell.CreateShortcut("$Global:Jobs\From $Global:SrcServer $($lbSrcBases.SelectedItem) to $Global:DstBase.lnk")
+	$Shortcut = $WshShell.CreateShortcut("$Global:Jobs\From $Global:SrcServer $($lbSrcBases.SelectedItem) to $Global:DstBases.lnk")
 	$Shortcut.TargetPath = "$Global:BatFolder\SQL-Base-Copy.cmd"
-	$Shortcut.Arguments = "$Global:SrcServer $($lbSrcBases.SelectedItem) $Global:DstBase"
+	$Shortcut.Arguments = "$Global:SrcServer $($lbSrcBases.SelectedItem) $Global:DstBases"
 	$Shortcut.WorkingDirectory = "$Global:BatFolder"
 	$Shortcut.Save()
   })
 
 $lDstBases = New-Object System.Windows.Forms.Label
-$lDstBases.Text = "Р¦РµР»РµРІРѕР№ (Р»РѕРєР°Р»СЊРЅС‹Р№) СЃРµСЂРІРµСЂ ""$DstServer"""
+$lDstBases.Text = "Целевой (локальный) сервер ""$DstServer"""
 $lDstBases.AutoSize = 1
 $lDstBases.Location  = New-Object System.Drawing.Point(400,5)
 
@@ -107,18 +112,15 @@ $cbNewBase = New-Object System.Windows.Forms.CheckBox
 $cbNewBase.Location = New-Object System.Drawing.Point(400,25)
 $cbNewBase.Size = New-Object System.Drawing.Size(20,20)
 $ttNebBase = New-Object System.Windows.Forms.ToolTip
-$ttNebBase.SetToolTip($cbNewBase,"РЎРѕР·РґР°С‚СЊ РЅРѕРІСѓСЋ Р±Р°Р·Сѓ`r`nРџСЂРё СЃРјРµРЅРµ СЃ РѕС‚РєР». РЅР° РІРєР»., РІ РїРѕР»Рµ С†РµР»РµРІРѕР№ Р±Р°Р·С‹ РєРѕРїРёСЂСѓРµС‚СЃСЏ РёРјСЏ РёСЃС…РѕРґРЅРѕР№ Р±Р°Р·С‹")
+$ttNebBase.SetToolTip($cbNewBase,"Создать новую базу`r`nПри смене с откл. на вкл., в поле целевой базы копируется имя исходной базы")
+
 $cbNewBase.Add_CheckStateChanged({
 	if ($cbNewBase.Checked) {
 		$eNewBase.Enabled = $True
-		$lbDstBases.Enabled = $False
 		$eNewBase.Text = $lbSrcBases.SelectedItem
-		$Global:DstBase = $eNewBase.Text
 		Update-Status
 		} else {
 		$eNewBase.Enabled = $False
-		$lbDstBases.Enabled = $True
-		$Global:DstBase = $lbDstBases.SelectedItem
 		Update-Status
 		}
 	})
@@ -129,19 +131,15 @@ $eNewBase.Size = New-Object System.Drawing.Size(280,20)
 $eNewBase.Text = "NEW_BASE"
 $eNewBase.Enabled = $False
 $eNewBaseBkColor = $eNewBase.BackColor
-$eNewBase.Add_TextChanged({
-	$Global:DstBase = $eNewBase.Text
-	Update-Status
-	})
+$eNewBase.Add_TextChanged({Update-Status})
 
 $lbDstBases = New-Object System.Windows.Forms.ListBox
 $lbDstBases.Location = New-Object System.Drawing.Point(400,50)
 $lbDstBases.Size = New-Object System.Drawing.Size(300,($fm.Height-120))
-
-$lbDstBases.Add_SelectedIndexChanged({
-	$Global:DstBase = $lbDstBases.SelectedItem
-	Update-Status
-	})
+$lbDstBases.SelectionMode = "MultiExtended"
+$ttDstBases = New-Object System.Windows.Forms.ToolTip
+$ttDstBases.SetToolTip($lbDstBases,"Множественный выбор с зажатой клавишей CTRL")
+$lbDstBases.Add_SelectedIndexChanged({Update-Status})
 
 $Vis = $False
 sqlcmd -W -b -Q "SELECT name FROM sys.databases ORDER BY name" | foreach {
@@ -155,6 +153,4 @@ $eStatus.Location = New-Object System.Drawing.Point(5,($fm.Height-25))
 $eStatus.Size = New-Object System.Drawing.Size(($fm.Width-10),20)
 
 $fm.Controls.AddRange(@($cbServers,$lSrcBases,$lDstBases,$lbSrcBases,$lbDstBases,$cbNewBase,$eNewBase,$bCopy,$eStatus,$bShortCut))
-
 $fm.ShowDialog() | Out-Null
-# Write-Host $fm.Width, $fm.Height
